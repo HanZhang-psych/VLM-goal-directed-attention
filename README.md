@@ -69,7 +69,7 @@ jupyter lab analysis/notebooks/
 |---|---|
 | `01_output_crossover`, `02_attention_crossover` | goal-manipulation double dissociation (2×2 prompt × human-map RM-ANOVA), output + attention arms |
 | `03_output_reorganization` | per-scene reorganization fidelity (pervasiveness of the crossover) |
-| `05_fixation_order` | fixation-order match (scasim-inspired + Sequence Score, vs shuffle floor / human ceiling) |
+| `05_fixation_order` | fixation-order match (scanpath similarity, vs shuffle floor / human ceiling) |
 | `04_thinking_trace_analysis` | reasoning-trace semantic dissociation (Qwen-Thinking `<think>` traces; producers in `trace/`) |
 
 ## Regenerate the data from scratch (optional; needs 2 GPUs)
