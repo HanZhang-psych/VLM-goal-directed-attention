@@ -22,3 +22,6 @@ analysis/data/
 
 # Input dataset (COCO-Search18 / COCO-FreeView) — fetch from the official source
 data/
+
+# manuscript files
+manuscript/
