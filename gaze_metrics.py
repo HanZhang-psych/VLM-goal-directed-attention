@@ -1,10 +1,9 @@
 """
 gaze_metrics.py — gaze-map metrics and letterbox cropping shared across the pipeline.
 
-Turns fixations into a smoothed full-resolution density map (per-pixel histogram -> FFT
-Gaussian low-pass at cutoff `fc` -> [0, 1]) and scores a predicted map against human gaze
-with Pearson CC and NSS. Also crops the black letterbox bars the COCO-Search18 display frame
-adds. Pure CPU / numpy — no model here, so it is importable and unit-testable.
+Turns fixations or model points into a smoothed full-resolution density map (per-pixel
+histogram -> FFT Gaussian low-pass at cutoff `fc` -> [0, 1]) and scores two maps with Pearson
+CC. Also crops the black letterbox bars the COCO-Search18 display frame adds. Pure CPU / numpy.
 """
 
 import numpy as np
@@ -49,7 +48,7 @@ def crop_letterbox(image, fixations=None, thresh=15):
 
 
 # ----------------------------------------------------------------------------
-# maps + metrics — full-resolution fixation heatmap + Pearson CC
+# maps + metric — full-resolution fixation heatmap + Pearson CC
 #
 # Build a full-resolution 2-D fixation histogram (one bin per image pixel), low-pass it with
 # an FFT Gaussian at cutoff frequency `fc`, then min-max to [0, 1]. FROZEN_FC = 6 gives an
@@ -96,18 +95,16 @@ def gaussian_2d(img, fc=FROZEN_FC):
     return bf[:sn, :sm]
 
 
-def draw_heatmap(x_pos, y_pos, im_w, im_h, weights=None, fc=FROZEN_FC):
+def draw_heatmap(x_pos, y_pos, im_w, im_h, fc=FROZEN_FC):
     """Full-resolution fixation-density map, shape (im_h, im_w), in [0,1].
 
-    One histogram bin per pixel, FFT-Gaussian smoothed, min-max normalized. `weights`
-    (per-fixation, e.g. duration or a rank weight) is optional — pass None for uniform.
+    One histogram bin per pixel, FFT-Gaussian smoothed, min-max normalized.
     """
-    hist = np.histogram2d(y_pos, x_pos, bins=(im_h, im_w),
-                          range=[[0, im_h], [0, im_w]], weights=weights)[0]
+    hist = np.histogram2d(y_pos, x_pos, bins=(im_h, im_w), range=[[0, im_h], [0, im_w]])[0]
     return _mat2gray(gaussian_2d(hist, fc)).astype(np.float32)
 
 
-def density_map(fix_xy, im_w, im_h, fc=FROZEN_FC, weights=None):
+def density_map(fix_xy, im_w, im_h, fc=FROZEN_FC):
     """Fixation/point array (N x 2 pixel x,y) -> full-resolution [0, 1] density map.
 
     Same smoothing scale for human and model points.
@@ -115,27 +112,7 @@ def density_map(fix_xy, im_w, im_h, fc=FROZEN_FC, weights=None):
     fix_xy = np.asarray(fix_xy, np.float32).reshape(-1, 2)
     if len(fix_xy) == 0:
         return np.zeros((im_h, im_w), np.float32)
-    w = None if weights is None else np.asarray(weights, np.float64).reshape(-1)
-    return draw_heatmap(fix_xy[:, 0], fix_xy[:, 1], im_w, im_h, weights=w, fc=fc)
-
-
-def nss(pred, fix_xy, im_w, im_h):
-    """Normalized Scanpath Saliency: z-score pred, average at fixation pixels.
-
-    Resolution-agnostic — maps fixations onto pred's own grid, so it works whether pred
-    is a full-resolution map or a resized model map.
-    """
-    if len(fix_xy) == 0:
-        return np.nan
-    H, W = pred.shape
-    p = pred.astype(np.float64)
-    s = p.std()
-    if s == 0:
-        return np.nan
-    p = (p - p.mean()) / s
-    gx = np.clip((fix_xy[:, 0] / im_w * W).astype(int), 0, W - 1)
-    gy = np.clip((fix_xy[:, 1] / im_h * H).astype(int), 0, H - 1)
-    return float(p[gy, gx].mean())
+    return draw_heatmap(fix_xy[:, 0], fix_xy[:, 1], im_w, im_h, fc=fc)
 
 
 def cc(pred, human):

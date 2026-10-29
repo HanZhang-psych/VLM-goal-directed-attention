@@ -42,11 +42,10 @@ def run(readout, images_csv, coco_dir, condition, run, outdir_root, n=20, chunk=
     ta = cf.load_records(cf.fixations_path(coco_dir, condition))
     fv_idx = cf.index_by_name(cf.load_records(
         os.path.join(coco_dir, "COCOFreeView_fixations_trainval.json")))
-    # letterbox-cropped image + human fixations on the same frame; density maps unused
-    # here (all scoring is offline), but this guarantees the model sees the SAME frame
-    # the human fixations live in, so emitted coordinates and gaze are comparable.
-    cache = {(t, nm): cf.build_maps(nm, t, cf.index_by_name(ta, task=t), fv_idx,
-                                    coco_dir, condition=condition, make_maps=False)
+    # letterbox-cropped image + human fixations on the same frame, so the model sees the SAME
+    # frame the human fixations live in and emitted coordinates and gaze are comparable.
+    cache = {(t, nm): cf.load_image_and_fixations(nm, t, cf.index_by_name(ta, task=t), fv_idx,
+                                                  coco_dir, condition=condition)
              for t, nm in images}
 
     # RAW human fixations so the human maps can be rebuilt at any smoothing/grid offline.

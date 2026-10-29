@@ -1,13 +1,11 @@
 """
-coco_fv.py — loads COCO-Search18 (search) and COCO-FreeView (free-view) fixation data
-and builds per-image human fixation maps.
+coco_fv.py — loads COCO-Search18 (search) and COCO-FreeView (free-view) fixation data.
 
-For one image it reads the fixation JSON, crops the image letterbox, shifts the fixations
-into the cropped frame, and builds two human fixation maps:
-  - human-search : search fixations for that image's target category (TA or TP)
-  - human-free   : free-view fixations on the same image
-Both are full-resolution densities, smoothed with the same kernel and normalized to [0, 1].
-It also returns the cropped image and the pooled fixation arrays.
+For one image it reads the fixation JSON, crops the image letterbox and shifts the fixations
+into the cropped frame, returning the cropped image and the pooled fixation arrays:
+  - search : search fixations for that image's target category (TA or TP)
+  - free   : free-view fixations on the same image
+The density maps themselves are built offline in analysis/ from the saved points.
 
 Data (see data/COCO-Search18/readme.txt):
   - TA-fixations/coco_search18_fixations_TA_trainval.json  (search, target-absent)
@@ -18,7 +16,7 @@ The image files are the display frame, so fixations are already in image pixels;
 loader crops the letterbox and shifts them into the cropped frame.
 
 Each record carries X, Y, T lists (first entry = forced central fixation), 'correct',
-'task', and 'name'. Pure CPU / numpy; uses gaze_metrics for cropping and density maps.
+'task', and 'name'. Pure CPU / numpy; uses gaze_metrics for the letterbox crop.
 """
 
 import os
@@ -92,24 +90,18 @@ def image_path(data_dir, task, name, condition="ta"):
     return os.path.join(data_dir, _IMG_DIR[condition], task, name)
 
 
-def build_maps(name, task, ta_idx, fv_idx, data_dir,
-               fc=ev.FROZEN_FC, drop_first=True, condition="ta", make_maps=True):
-    """Build the per-image inputs for one image (TA or TP).
+def load_image_and_fixations(name, task, ta_idx, fv_idx, data_dir, drop_first=True, condition="ta"):
+    """Cropped image + pooled human fixations in the cropped frame, for one image (TA or TP).
 
     ta_idx : index_by_name(search records, task=task)
     fv_idx : index_by_name(free-view records)
     Returns a dict:
       image  : cropped PIL image
-      grid   : (ih, iw) full-res map shape
       size   : (iw, ih)
       fix    : {'search': Nx2, 'free': Nx2} pooled fixations, cropped to content
-      human  : {'search': ih x iw, 'free': ih x iw} full-res densities in [0, 1], or None
-    make_maps=False returns human=None and builds only the image and fixation arrays.
     """
     image = Image.open(image_path(data_dir, task, name, condition)).convert("RGB")
     fix = {"search": pool_fixations(ta_idx.get(name, []), drop_first),
            "free":   pool_fixations(fv_idx.get(name, []), drop_first)}
     image, fix, (iw, ih) = ev.crop_letterbox(image, fix)
-    human = {k: ev.density_map(fix[k], iw, ih, fc) for k in fix} if make_maps else None
-    return {"image": image, "grid": (ih, iw), "size": (iw, ih),
-            "fix": fix, "human": human, "task": task, "name": name}
+    return {"image": image, "size": (iw, ih), "fix": fix, "task": task, "name": name}

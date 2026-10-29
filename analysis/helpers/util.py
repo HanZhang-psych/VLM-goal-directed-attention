@@ -1,12 +1,16 @@
 """Small notebook utilities shared across data analyses."""
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from PIL import Image
 
-from . import gaze_metrics as gm
-from . import runs as R
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+import gaze_metrics as gm  # noqa: E402  (repo root: shared with inference/)
+
+from . import runs as R  # noqa: E402
 
 
 def get_run_ids(model, condition, goal):
