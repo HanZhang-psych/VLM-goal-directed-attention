@@ -7,8 +7,7 @@ once (RUNS), so a notebook names a cell — (model, condition, prompt) — not a
   - scaleup — the train-minus-smoke split (~2090 TA / ~2150 TP; disjoint from val AND smoke).
 
 They are disjoint image sets, so pooling = concatenation (n ~= 2413 per TA cell, 2474 per TP
-cell). A few cells are sharded (a job hit the walltime and finished as extra shards, or the val
-set was run in chunks); every shard is listed and pooling dedups naturally by (task,name).
+cell). All runs are vLLM generations with the same prompts and sampler.
 
 The cells = 2 models × 2 conditions {tp, ta} × 2 prompts {search, free}.
 
@@ -45,11 +44,8 @@ RUNS = {
 
     # ============================ Gemma-4-26B-A4B-it ============================
     # ---- prompts: search / free-view ----
-    #   TP search val is stitched: 57202064 (321/326, hit walltime) + 57260139 (final 5 images).
-    #   TA free val is sharded: five HF chunks covering the 326 val images (66+66+66+66+62).
-    ("gemma", "tp", "search"): {"val": ["57202064", "57260139"], "scaleup": ["58387155"]},
+    ("gemma", "tp", "search"): {"val": ["64991404"], "scaleup": ["58387155"]},
     ("gemma", "tp", "free"):   {"val": ["58411643"], "scaleup": ["58387156"]},
-    ("gemma", "ta", "search"): {"val": ["57202063"], "scaleup": ["58387153"]},
-    ("gemma", "ta", "free"):   {"val": ["57707609", "57707610", "57707611",
-                                                  "57707612", "57707613"], "scaleup": ["58387154"]},
+    ("gemma", "ta", "search"): {"val": ["64991402"], "scaleup": ["58387153"]},
+    ("gemma", "ta", "free"):   {"val": ["64991403"], "scaleup": ["58387154"]},
 }

@@ -51,7 +51,7 @@ concatenation), n ≈ 2474 per TP cell / 2413 per TA cell. Authoritative list: `
 | Qwen3-VL-32B-Instruct | TP | free | 63889208 | 63889209 |
 | Qwen3-VL-32B-Instruct | TA | search | 63889202 | 63889203 |
 | Qwen3-VL-32B-Instruct | TA | free | 63889204 | 63889205 |
-| Gemma-4-26B-A4B-it | TP | search | 57202064 + 57260139 (stitch) | 58387155 |
+| Gemma-4-26B-A4B-it | TP | search | 64991404 | 58387155 |
 | Gemma-4-26B-A4B-it | TP | free | 58411643 | 58387156 |
-| Gemma-4-26B-A4B-it | TA | search | 57202063 | 58387153 |
-| Gemma-4-26B-A4B-it | TA | free | 57707609–57707613 (5 shards) | 58387154 |
+| Gemma-4-26B-A4B-it | TA | search | 64991402 | 58387153 |
+| Gemma-4-26B-A4B-it | TA | free | 64991403 | 58387154 |
