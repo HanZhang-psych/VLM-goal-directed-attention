@@ -1,6 +1,6 @@
 # analysis/ — reproducing the paper results
 
-The notebook that assembles the paper's numbers from the per-run data (`data/`, gitignored — see
+The notebooks that assemble the paper's numbers from the per-run data (`data/`, gitignored — see
 the top-level README), with the small helper modules it needs. The density-map code is the repo-root
 `gaze_metrics.py`, shared with `inference/`; `helpers/util.py` puts the repo root on the path.
 
@@ -9,11 +9,12 @@ the top-level README), with the small helper modules it needs. The density-map c
 ```
 analysis/
   helpers/
-    runs.py           run-ID registry (RUNS): (model, condition, prompt) -> val + scale-up run ids
+    runs.py           run-ID registries: RUNS (model, condition, prompt) and ABLATIONS (model, condition, goal/format)
     util.py           CSV loaders (model points, human fixations) and density-map helpers
   data/<run>/         per-run inputs (gitignored; download the data release — see top-level README)
   notebooks/
-    01_output_crossover.ipynb   2x2 goal-manipulation dissociation, target-present and target-absent
+    01_output_crossover.ipynb          2x2 goal-manipulation dissociation, target-present and target-absent
+    02_goal_vs_format_ablation.ipynb   goal-row vs format-row ablation vs the intact and free-view reference cells
 ```
 
 ## Running
@@ -57,3 +58,16 @@ about 2% of images. Authoritative list: `helpers/runs.py`.
 | Gemma-4-26B-A4B-it | TP | free | 58411643 | 58387156 |
 | Gemma-4-26B-A4B-it | TA | search | 64991402 | 58387153 |
 | Gemma-4-26B-A4B-it | TA | free | 64991403 | 58387154 |
+
+**Ablation cells** (notebook 02; HF causal hook, same prompts/sampler/image sets):
+
+| model | cond | ablation | val | scale-up |
+|---|---|---|---|---|
+| Qwen3-VL-32B-Instruct | TP | goal-blind | 63953881 | 63998069 |
+| Qwen3-VL-32B-Instruct | TP | format-blind | 63953880 | 63998068 |
+| Qwen3-VL-32B-Instruct | TA | goal-blind | 63953877 | 63998067 |
+| Qwen3-VL-32B-Instruct | TA | format-blind | 63953876 | 63998066 |
+| Gemma-4-26B-A4B-it | TP | goal-blind | 64279305 | 64317440 |
+| Gemma-4-26B-A4B-it | TP | format-blind | 64279304 + 64348378 | 64348381 |
+| Gemma-4-26B-A4B-it | TA | goal-blind | 64279303 | 64317438 |
+| Gemma-4-26B-A4B-it | TA | format-blind | 64279302 | 64317437 |

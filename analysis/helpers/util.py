@@ -19,6 +19,12 @@ def get_run_ids(model, condition, goal):
     return list(run_groups["val"]) + list(run_groups["scaleup"])
 
 
+def get_ablation_run_ids(model, condition, ablation):
+    """Return val + scaleup run IDs for one ablation cell (ablation = goal / format)."""
+    run_groups = R.ABLATIONS.get((model, condition, ablation), {"val": [], "scaleup": []})
+    return list(run_groups["val"]) + list(run_groups["scaleup"])
+
+
 def get_run_file(run_id, prefix):
     """Locate one bundled data file, falling back to the live output root."""
     extension = "jsonl" if prefix == "answers" else "csv"

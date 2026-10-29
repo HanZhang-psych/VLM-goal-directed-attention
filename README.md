@@ -15,7 +15,7 @@ in the models' emitted coordinates.
 config.py, coco_fv.py, gaze_metrics.py   shared: frozen prompts, output length cap, COCO loader, gaze metrics
 inference/                                  sample coordinate scanpaths via vLLM
 image_sets/                              the image lists fed to each run (task,name CSVs)
-analysis/                                self-contained reproduction of the paper numbers (notebook 01)
+analysis/                                reproduction of the paper numbers (notebooks 01–02)
 ```
 
 `inference/README.md` has the exact commands to generate the model outputs.
@@ -36,12 +36,12 @@ The reproduction data is hosted on Zenodo —
 (`VLM-gaze-reproduction-data.tar.gz`, CC-BY-4.0) — not in this repository.
 
 1. **Reproduction data** — the per-run model outputs the analysis notebook reads
-   (`points_`/`human_points_` CSVs). Download and extract it into `analysis/data/` (gitignored):
+   (`points_`/`human_points_` CSVs for the reference and the ablation runs). Download and extract it into `analysis/data/` (gitignored):
    ```bash
    # after downloading/extracting the Zenodo archive:
    #   analysis/data/<run>/points_<run>.csv, human_points_<run>.csv
    ```
-   Then run the notebook — it reads only `helpers/` + `analysis/data/`, nothing else.
+   Then run the notebooks — they read `helpers/`, the root `gaze_metrics.py` and `analysis/data/`.
 2. **Raw provenance** (not in the Zenodo archive) — the full model generations (`answers_*.jsonl`)
    are available on request; the cluster job logs are not distributed.
 
@@ -55,13 +55,14 @@ the raw COCO data** (only the example-image figure reads one COCO image).
 
 ```bash
 # 1. download the reproduction data into analysis/data/ (see Data above)
-# 2. open the notebook (it uses only analysis/helpers + analysis/data)
+# 2. open the notebooks (they use analysis/helpers, the root gaze_metrics.py and analysis/data)
 jupyter lab analysis/notebooks/
 ```
 
 | Notebook | Result |
 |---|---|
 | `01_output_crossover` | goal-manipulation double dissociation (2×2 prompt × human-map RM-ANOVA), target-present and target-absent, both models |
+| `02_goal_vs_format_ablation` | goal-row vs format-row attention ablation: the search-aligned output reverts to the model's free-view output when the goal sentence cannot read the image |
 
 ## Regenerate the data from scratch (optional; needs 2 GPUs)
 

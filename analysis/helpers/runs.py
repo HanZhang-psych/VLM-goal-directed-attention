@@ -49,3 +49,19 @@ RUNS = {
     ("gemma", "ta", "search"): {"val": ["64991402"], "scaleup": ["58387153"]},
     ("gemma", "ta", "free"):   {"val": ["64991403"], "scaleup": ["58387154"]},
 }
+
+# Goal-row vs format-row ablation cells (HF causal hook; same prompts, sampler and image sets as
+# the cells above). (model, condition, ablation) -> {"val": [...], "scaleup": [...]}.
+#   goal   = the goal sentence's tokens cannot attend to the image (knockout_goal)
+#   format = the size-matched format sentence's tokens cannot attend to the image (knockout_format)
+ABLATIONS = {
+    ("qwen-instruct", "tp", "goal"):   {"val": ["63953881"], "scaleup": ["63998069"]},
+    ("qwen-instruct", "tp", "format"): {"val": ["63953880"], "scaleup": ["63998068"]},
+    ("qwen-instruct", "ta", "goal"):   {"val": ["63953877"], "scaleup": ["63998067"]},
+    ("qwen-instruct", "ta", "format"): {"val": ["63953876"], "scaleup": ["63998066"]},
+    # Gemma TP format val finished as two shards (64279304 hit its wall at 290/326; 64348378 = rest).
+    ("gemma", "tp", "goal"):   {"val": ["64279305"], "scaleup": ["64317440"]},
+    ("gemma", "tp", "format"): {"val": ["64279304", "64348378"], "scaleup": ["64348381"]},
+    ("gemma", "ta", "goal"):   {"val": ["64279303"], "scaleup": ["64317438"]},
+    ("gemma", "ta", "format"): {"val": ["64279302"], "scaleup": ["64317437"]},
+}
