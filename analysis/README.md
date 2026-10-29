@@ -14,7 +14,7 @@ analysis/
   data/<run>/         per-run inputs (gitignored; download the data release — see top-level README)
   notebooks/
     01_output_crossover.ipynb          2x2 goal-manipulation dissociation, target-present and target-absent
-    02_goal_vs_format_ablation.ipynb   goal-row vs format-row ablation vs the intact and free-view reference cells
+    02_goal_vs_format_ablation.ipynb   goal-row vs format-row ablation (intact references hard-coded from notebook 01)
 ```
 
 ## Running

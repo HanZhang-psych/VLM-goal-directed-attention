@@ -98,3 +98,48 @@ def format_p_value(p_value):
     return f"p = {p_value:.3f}"
 
 
+
+
+# ----------------------------------------------------------------------------- figure style
+# One style for every notebook figure. Widths follow Communications Psychology's column widths
+# (88 mm single, 180 mm double). Each legend in the paper has its own colour set, so a colour never
+# means two things across figures.
+SINGLE_COL = 3.46   # inches (88 mm)
+DOUBLE_COL = 7.09   # inches (180 mm)
+FIG_DPI = 300       # saved and inline figures, so proofs match the manuscript
+
+MODEL_SHORT = {"qwen-instruct": "Qwen", "gemma": "Gemma"}
+CONDITION_LABEL = {"tp": "Target present", "ta": "Target absent"}
+GOAL_LABEL = {"search": "Search", "free": "Free-view"}
+
+ABLATION_COLORS = {"Control Ablation": "#7F7F7F", "Goal Ablation": "#009E73"}  # notebook 02 ablations
+REFERENCE_COLOR = "#000000"                                                   # dashed reference marks
+
+
+def apply_figstyle():
+    """Set matplotlib rcParams for the notebooks' figures (call once after importing matplotlib)."""
+    import matplotlib as mpl
+    mpl.rcParams.update({
+        "font.family": "sans-serif",
+        "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans"],
+        "font.size": 8,
+        "axes.titlesize": 8,
+        "axes.labelsize": 8,
+        "xtick.labelsize": 7,
+        "ytick.labelsize": 7,
+        "legend.fontsize": 7,
+        "legend.title_fontsize": 7,
+        "legend.frameon": False,
+        "axes.spines.top": False,
+        "axes.spines.right": False,
+        "axes.linewidth": 0.6,
+        "xtick.major.width": 0.6,
+        "ytick.major.width": 0.6,
+        "lines.linewidth": 1.0,
+        "patch.linewidth": 0.5,
+        "figure.dpi": FIG_DPI,
+        "savefig.dpi": FIG_DPI,
+        "savefig.bbox": "tight",
+        "pdf.fonttype": 42,
+        "ps.fonttype": 42,
+    })
