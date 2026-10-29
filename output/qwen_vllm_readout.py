@@ -1,18 +1,15 @@
-"""qwen_vllm_readout.py — Qwen3-VL-32B-Thinking OUTPUT arm via vLLM.
+"""qwen_vllm_readout.py — Qwen3-VL-32B OUTPUT arm via vLLM (Instruct or Thinking weights).
 
-The Thinking variant of Qwen3-VL emits a <think>...</think> trace before the REGION|POINT answer,
-so we keep a reasoning trace (the reason to prefer Thinking over Instruct here) while getting
-vLLM's continuous-batching throughput. Coordinates are 0-1000 normalized per axis, REGION|POINT,
-top-MAX_POINTS ranked; the answer is taken AFTER </think>. RUN IN A vLLM env (the shared
-glm-vllm-env has vLLM; 32B needs 2 GPUs -> TP=2).
+The revision's Qwen cells use the INSTRUCT weights: set QWEN_VLLM_ID=Qwen/Qwen3-VL-32B-Instruct
+(the default here is the Thinking id used by the original runs). Both variants share the prompt,
+the sampler and the parser. The Thinking variant emits a <think>...</think> trace before the
+REGION|POINT answer; the answer is taken AFTER </think> (a no-op for Instruct). Coordinates are
+0-1000 normalized per axis, REGION|POINT, top-MAX_POINTS ranked. RUN IN A vLLM env (32B needs
+2 GPUs -> TP=2).
 
 Interface for output_arm.run: load / prompt_for / sample_answers[/ _batch] / parse — with chunked
-batching (like GLMVllmReadout). Tunables (env, NOT in the VLLM_ namespace): QWEN_TP, QWEN_MAX_LEN,
-QWEN_GPU_UTIL, QWEN_MAX_SEQS, QWEN_MAX_NEW.
-
-NOTE — the ATTENTION arm (double-dissociation + layer-replication test vs Instruct) is UNAFFECTED
-and needs no vLLM: run `run_attn_qwen.py --model Qwen/Qwen3-VL-32B-Thinking --prompt search|freeview`
-(HF eager capture), then rescore/scan as for Instruct. vLLM does not expose attention weights.
+batching. Tunables (env, NOT in the VLLM_ namespace): QWEN_TP, QWEN_MAX_LEN, QWEN_GPU_UTIL,
+QWEN_MAX_SEQS, QWEN_MAX_NEW.
 """
 import os
 import re
@@ -21,9 +18,7 @@ import numpy as np
 
 from config import FROZEN_SYSTEM, FROZEN_PROMPT, FREEVIEW_PROMPT, MODEL_IDS
 
-# Default = Thinking (the reasoning variant we want). Override with QWEN_VLLM_ID to run vLLM on the
-# INSTRUCT weights instead — that gives a PURE engine parity (vLLM-Instruct vs the existing
-# HF-Instruct smoke), isolating the vLLM engine from the Instruct->Thinking model change.
+# Default = Thinking (the original runs). The revision's cells set QWEN_VLLM_ID to the Instruct id.
 MODEL_ID = os.environ.get("QWEN_VLLM_ID", MODEL_IDS["qwen-thinking"])
 
 MAX_POINTS = 12            # cap points parsed per sampled scanpath

@@ -54,7 +54,7 @@ def crop_letterbox(image, fixations=None, thresh=15):
 # Build a full-resolution 2-D fixation histogram (one bin per image pixel), low-pass it with
 # an FFT Gaussian at cutoff frequency `fc`, then min-max to [0, 1]. FROZEN_FC = 6 gives an
 # effective Gaussian sigma ~6% of image height on COCO-sized frames. The same blur is used for
-# every map (human, output, attention) so they are comparable.
+# every map (human and model output) so they are comparable.
 # ----------------------------------------------------------------------------
 FROZEN_FC = 6.0   # low-pass cutoff frequency (cycles/image, -6 dB); one blur for every map
 
@@ -117,21 +117,6 @@ def density_map(fix_xy, im_w, im_h, fc=FROZEN_FC, weights=None):
         return np.zeros((im_h, im_w), np.float32)
     w = None if weights is None else np.asarray(weights, np.float64).reshape(-1)
     return draw_heatmap(fix_xy[:, 0], fix_xy[:, 1], im_w, im_h, weights=w, fc=fc)
-
-
-def grid_to_density(grid, im_w, im_h, fc=FROZEN_FC):
-    """Coarse value-grid (e.g. attention over vision tokens) -> full-resolution [0, 1] density.
-
-    Places each grid cell as a weighted point at its center and runs it through the same
-    draw_heatmap (FFT Gaussian, fc) that builds the human and output maps, so the attention
-    arm is smoothed on the same scale as the point-based arms. `grid` is a 2-D (gh, gw) array.
-    """
-    grid = np.asarray(grid, np.float64)
-    gh, gw = grid.shape
-    yy, xx = np.mgrid[0:gh, 0:gw]
-    xc = ((xx + 0.5) / gw * im_w).ravel()
-    yc = ((yy + 0.5) / gh * im_h).ravel()
-    return draw_heatmap(xc, yc, im_w, im_h, weights=grid.ravel(), fc=fc)
 
 
 def nss(pred, fix_xy, im_w, im_h):

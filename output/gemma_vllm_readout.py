@@ -9,8 +9,7 @@ Holds two readouts for output_arm.run:
                         chunked cross-image batching), reusing GemmaReadout's prompt_for/parse.
                         Used by run_coord_sample_gemma_vllm.py.
 
-Gemma is REPORTED in Instruct (non-thinking) mode. vLLM does NOT expose attention weights, so the
-ATTENTION arm stays on the HF eager path (attention/gemma_attn_readout.py); this file is OUTPUT-only.
+Gemma is REPORTED in Instruct (non-thinking) mode.
 
 RUN THE vLLM PATH IN A vLLM ENV WITH Gemma-4 SUPPORT — its per-layer head_dim needs vLLM>=0.27.2.
 26B-total MoE -> 2 GPUs (TP=2). Tunables (env, NOT

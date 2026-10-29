@@ -12,20 +12,16 @@ trainval-smoke" dataset (n ~= 2413 per TA cell, 2474 per TP cell). A few cells a
 (a job hit the walltime and finished as extra shards, or the val set was run in chunks);
 every shard is listed and pooling dedups naturally by (task,name).
 
-The 16 cells = 2 models × 2 conditions {tp, ta} × 2 arms {output, attention} × 2 readouts.
-Readout naming: OUTPUT arm = {search, free} (the two PROMPTS); ATTENTION arm = {search, free}
-(the two frozen READOUTS — search band vs free layer). Frozen readout provenance (config.py):
-  attention search band  — qwen-thinking `mid` (0.4-0.7), gemma `early` (0.1-0.4)
-  attention free layer — qwen-thinking L23, gemma L28 (query token 'remember')
+The cells = models × 2 conditions {tp, ta} × the OUTPUT arm × 2 prompts {search, free}.
+The revision's models are Qwen3-VL-32B-Instruct and Gemma-4-26B-A4B-it; the original
+Qwen3-VL-32B-Thinking cells stay registered for provenance.
 
 Data files are read by `helpers.util`; this module intentionally only stores constants.
 
 Per-run files:
-  OUTPUT arm     points_<run>.csv        mode,condition,task,name,iw,ih,seq,rank,x1000,y1000,x_px,y_px,region
-                 human_points_<run>.csv  task,name,iw,ih,kind,x_px,y_px        (kind in {search,free})
-                 answers_<run>.jsonl     raw model generations (provenance)
-  ATTENTION arm  attn_summary_<run>.csv  key,band,condition,task,name,n_pool,cc_search,cc_free,nss
-                 attn_points_<run>.csv   the WTA+IOR scanpath peaks
+  points_<run>.csv        mode,condition,task,name,iw,ih,seq,rank,x1000,y1000,x_px,y_px,region
+  human_points_<run>.csv  task,name,iw,ih,kind,x_px,y_px        (kind in {search,free})
+  answers_<run>.jsonl     raw model generations (provenance)
 """
 import os
 from pathlib import Path
@@ -38,8 +34,9 @@ OUTPUT_ROOT = (os.environ.get("VLM_GAZE_OUTPUT_ROOT")
 
 FROZEN_TOPN = 5          # top-N ranked model points kept per sample (config.FROZEN_TOPN)
 
-MODEL_LABEL = {"qwen-thinking": "Qwen3-VL-32B-Thinking", "gemma": "Gemma-4-26B-A4B-it"}
-MODELS = ["qwen-thinking", "gemma"]
+MODEL_LABEL = {"qwen-thinking": "Qwen3-VL-32B-Thinking", "qwen-instruct": "Qwen3-VL-32B-Instruct",
+               "gemma": "Gemma-4-26B-A4B-it"}
+MODELS = ["qwen-instruct", "gemma"]
 CONDITIONS = ["tp", "ta"]
 
 # (model, condition, arm, readout) -> {"val": [...], "scaleup": [...]}
@@ -50,14 +47,19 @@ RUNS = {
     ("qwen-thinking", "tp", "output", "free"):   {"val": ["58094796"], "scaleup": ["58094446"]},
     ("qwen-thinking", "ta", "output", "search"): {"val": ["58031597"], "scaleup": ["58094212"]},
     ("qwen-thinking", "ta", "output", "free"):   {"val": ["58031679"], "scaleup": ["58094237"]},
-    # ---- ATTENTION arm (readouts: search band `mid` / free-view layer L23) ----
-    ("qwen-thinking", "tp", "attention", "search"): {"val": ["58031828"], "scaleup": ["58309309"]},
-    ("qwen-thinking", "tp", "attention", "free"): {"val": ["58648158"], "scaleup": ["58648159"]},
-    ("qwen-thinking", "ta", "attention", "search"): {"val": ["58031823"], "scaleup": ["58309304"]},
-    ("qwen-thinking", "ta", "attention", "free"): {"val": ["58648156"], "scaleup": ["58648157"]},
+
+    # ============================ Qwen3-VL-32B-Instruct ============================
+    # The revision's Qwen model: same vLLM protocol, prompts, sampler and image sets as the
+    # Thinking cells (QWEN_VLLM_ID override), run 2026-10-13/14. The causal (ablation) arm is run
+    # on this model, so the alignment and the ablation results share one model and one sampler.
+    # ---- OUTPUT arm (prompts: search / free-view) ----
+    ("qwen-instruct", "tp", "output", "search"): {"val": ["63889206"], "scaleup": ["63889207"]},
+    ("qwen-instruct", "tp", "output", "free"):   {"val": ["63889208"], "scaleup": ["63889209"]},
+    ("qwen-instruct", "ta", "output", "search"): {"val": ["63889202"], "scaleup": ["63889203"]},
+    ("qwen-instruct", "ta", "output", "free"):   {"val": ["63889204"], "scaleup": ["63889205"]},
 
     # ============================ Gemma-4-26B-A4B-it (Instruct) ============================
-    # ---- OUTPUT arm ----
+    # ---- OUTPUT arm (prompts: search / free-view) ----
     #   TP search val is stitched: 57202064 (321/326, hit walltime) + 57260139 (final 5 images).
     #   TA free val is sharded: five HF chunks covering the 326 val images (66+66+66+66+62).
     ("gemma", "tp", "output", "search"): {"val": ["57202064", "57260139"], "scaleup": ["58387155"]},
@@ -65,9 +67,4 @@ RUNS = {
     ("gemma", "ta", "output", "search"): {"val": ["57202063"], "scaleup": ["58387153"]},
     ("gemma", "ta", "output", "free"):   {"val": ["57707609", "57707610", "57707611",
                                                   "57707612", "57707613"], "scaleup": ["58387154"]},
-    # ---- ATTENTION arm (readouts: search band `early` / free-view layer L28) ----
-    ("gemma", "tp", "attention", "search"): {"val": ["57251467"], "scaleup": ["58380383"]},
-    ("gemma", "tp", "attention", "free"): {"val": ["58648162"], "scaleup": ["58648163"]},
-    ("gemma", "ta", "attention", "search"): {"val": ["57251466"], "scaleup": ["58380381"]},
-    ("gemma", "ta", "attention", "free"): {"val": ["58648160"], "scaleup": ["58648161"]},
 }
