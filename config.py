@@ -1,6 +1,6 @@
 """
-config.py — shared constants for the VLM-gaze runners: the model ids, the output root,
-the Slurm job id, the frozen prompts, and the output length cap.
+config.py — shared constants for the inference scripts: the model ids, the output root, the
+Slurm job id, the two frozen prompts, and the output length cap used by the analysis.
 """
 import os
 
@@ -9,16 +9,6 @@ MODEL_IDS = {
     "qwen-instruct": "Qwen/Qwen3-VL-32B-Instruct",
     "gemma": "google/gemma-4-26B-A4B-it",
 }
-_ID_TO_KEY = {v: k for k, v in MODEL_IDS.items()}
-
-
-def model_key(name):
-    """Resolve a friendly key ('gemma') OR a full HF id to the friendly key, for config lookups."""
-    return name if name in MODEL_IDS else _ID_TO_KEY.get(name, name)
-
-
-# Default model used when --model is not passed.
-DEFAULT_MODEL = MODEL_IDS["qwen-instruct"]
 
 DEFAULT_OUTPUT_ROOT = (os.environ.get("VLM_GAZE_OUTPUT_ROOT")
                        or os.path.expanduser("~/vlm-gaze/output"))
