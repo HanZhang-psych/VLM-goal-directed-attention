@@ -1,6 +1,6 @@
 """run_coord_sample_qwen_vllm.py — coordinate readout for Qwen3-VL-32B-Instruct via vLLM.
 
-Hands output_arm.run a QwenVllmReadout (vLLM continuous batching + chunked cross-image submission)
+Hands coord_sample.run a QwenVllmReadout (vLLM continuous batching + chunked cross-image submission)
 and emits the standard points_/human_points/answers schema; scoring is done in analysis/.
 RUN IN A vLLM env (glm-vllm-env has vLLM; 32B needs 2 GPUs).
 
@@ -9,7 +9,7 @@ Usage:
 """
 import argparse
 
-import output_arm
+import coord_sample
 from config import DEFAULT_OUTPUT_ROOT, SLURM_JOB_ID
 from qwen_vllm_readout import QwenVllmReadout
 
@@ -30,7 +30,7 @@ def main():
     args = ap.parse_args()
     if not args.run or not str(args.run).isdigit():
         ap.error("--run must be the numeric run/job id")
-    output_arm.run(QwenVllmReadout(mode=args.mode), args.images_csv, args.coco_dir,
+    coord_sample.run(QwenVllmReadout(mode=args.mode), args.images_csv, args.coco_dir,
                    args.condition, args.run, DEFAULT_OUTPUT_ROOT, n=args.n, chunk=args.chunk)
 
 

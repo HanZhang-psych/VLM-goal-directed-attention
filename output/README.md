@@ -14,6 +14,6 @@ PYTHONPATH=. python output/run_coord_sample_gemma.py      --run 001 --condition 
 
 | file | role |
 |---|---|
-| `output_arm.py` | writes the `points_/human_points_/answers` schema; shared by every runner |
+| `coord_sample.py` | writes the `points_/human_points_/answers` schema; shared by every runner |
 | `qwen_vllm_readout.py`, `gemma_vllm_readout.py` | vLLM decoding readouts; each also holds its model's output parsing (`qwen_vllm_readout` the Qwen parsers; `gemma_vllm_readout` the `GemmaReadout` HF base + `GemmaVllmReadout` subclass) |
 | `run_coord_sample_qwen_vllm.py`, `…_gemma_vllm.py`, `…_gemma.py` | per-model entrypoints |

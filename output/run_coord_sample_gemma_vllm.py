@@ -1,6 +1,6 @@
 """run_coord_sample_gemma_vllm.py — coordinate readout for Gemma-4-26B-A4B-it via vLLM.
 
-Hands output_arm.run a GemmaVllmReadout (vLLM continuous batching + chunked cross-image submission)
+Hands coord_sample.run a GemmaVllmReadout (vLLM continuous batching + chunked cross-image submission)
 and emits the standard points_/human_points/answers schema; scoring is done in analysis/.
 RUN IN A vLLM env (glm-vllm-env has vLLM; 26B MoE needs 2 GPUs). The Gemma HF output path is
 run_coord_sample_gemma.py.
@@ -10,7 +10,7 @@ Usage:
 """
 import argparse
 
-import output_arm
+import coord_sample
 from config import DEFAULT_OUTPUT_ROOT, SLURM_JOB_ID
 from gemma_vllm_readout import GemmaVllmReadout
 
@@ -31,7 +31,7 @@ def main():
     args = ap.parse_args()
     if not args.run or not str(args.run).isdigit():
         ap.error("--run must be the numeric run/job id")
-    output_arm.run(GemmaVllmReadout(mode=args.mode), args.images_csv,
+    coord_sample.run(GemmaVllmReadout(mode=args.mode), args.images_csv,
                    args.coco_dir, args.condition, args.run, DEFAULT_OUTPUT_ROOT, n=args.n, chunk=args.chunk)
 
 

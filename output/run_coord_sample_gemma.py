@@ -1,6 +1,6 @@
 """run_coord_sample_gemma.py — coordinate readout for Gemma-4-26B-A4B-it (HF).
 
-Thin driver: builds a GemmaReadout and hands it to the model-agnostic `output_arm.run`, which
+Thin driver: builds a GemmaReadout and hands it to the model-agnostic `coord_sample.run`, which
 emits the standard points_/human_points/answers schema; scoring is done in analysis/.
 The Gemma output readout (GemmaReadout) lives in gemma_vllm_readout.py.
 
@@ -9,7 +9,7 @@ Usage:
 """
 import argparse
 
-import output_arm
+import coord_sample
 from config import DEFAULT_OUTPUT_ROOT, SLURM_JOB_ID
 from gemma_vllm_readout import GemmaReadout
 
@@ -32,7 +32,7 @@ def main():
     args = ap.parse_args()
     if not args.run or not str(args.run).isdigit():
         ap.error("--run must be the numeric run/job id")
-    output_arm.run(GemmaReadout(mode=args.mode, batch=args.batch,
+    coord_sample.run(GemmaReadout(mode=args.mode, batch=args.batch,
                                 min_new_tokens=args.min_new_tokens),
                    args.images_csv, args.coco_dir,
                    args.condition, args.run, DEFAULT_OUTPUT_ROOT, n=args.n)

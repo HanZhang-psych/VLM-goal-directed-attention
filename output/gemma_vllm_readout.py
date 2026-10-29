@@ -1,6 +1,6 @@
 """gemma_vllm_readout.py — Gemma-4-26B-A4B-it coordinate readout.
 
-Holds two readouts for output_arm.run:
+Holds two readouts for coord_sample.run:
   - GemmaReadout      : the HF (transformers .generate) output readout — sample N REGION|POINT
                         answers to the shared frozen prompt and parse the ranked coordinates
                         (mode="box" is the Gemma-native JSON box_2d ablation). Used by

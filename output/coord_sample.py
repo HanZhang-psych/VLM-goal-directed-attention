@@ -1,4 +1,4 @@
-"""output_arm.py — model-agnostic harness for the coordinate readout.
+"""coord_sample.py — model-agnostic harness for the coordinate readout.
 
 Purpose: run the coordinate/output readout for ANY model while emitting one shared schema,
 so the scoring (in analysis/) is identical across models:

@@ -4,7 +4,7 @@ Coordinates are 0-1000 normalized per axis, REGION|POINT, top-MAX_POINTS ranked.
 emits a <think>...</think> block, the answer is taken AFTER </think>. QWEN_VLLM_ID overrides the
 model id. RUN IN A vLLM env (32B needs 2 GPUs -> TP=2).
 
-Interface for output_arm.run: load / prompt_for / sample_answers[/ _batch] / parse — with chunked
+Interface for coord_sample.run: load / prompt_for / sample_answers[/ _batch] / parse — with chunked
 batching. Tunables (env, NOT in the VLLM_ namespace): QWEN_TP, QWEN_MAX_LEN, QWEN_GPU_UTIL,
 QWEN_MAX_SEQS, QWEN_MAX_NEW.
 """
