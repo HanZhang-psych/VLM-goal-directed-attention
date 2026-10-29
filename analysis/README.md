@@ -43,7 +43,9 @@ per-image Pearson CC. The **prompt × map interaction is the double dissociation
 ## Run-ID provenance
 
 Pooled = validation split + train-minus-smoke scale-up (disjoint image sets, so pooling =
-concatenation), n ≈ 2474 per TP cell / 2413 per TA cell. Authoritative list: `helpers/runs.py`.
+concatenation). Images scored per 2x2: 2474 (TP) and 2413 (TA) for Qwen; 2474 (TP) and 2364 (TA) for
+Gemma, whose target-absent search prompt yields no parseable `POINT` line in any of the 20 samples on
+about 2% of images. Authoritative list: `helpers/runs.py`.
 
 | model | cond | prompt | val | scale-up |
 |---|---|---|---|---|

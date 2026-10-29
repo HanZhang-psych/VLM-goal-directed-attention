@@ -6,8 +6,8 @@ once (RUNS), so a notebook names a cell — (model, condition, prompt) — not a
   - val     — the 326-image validation split,
   - scaleup — the train-minus-smoke split (~2090 TA / ~2150 TP; disjoint from val AND smoke).
 
-They are disjoint image sets, so pooling = concatenation (n ~= 2413 per TA cell, 2474 per TP
-cell). All runs are vLLM generations with the same prompts and sampler.
+They are disjoint image sets, so pooling = concatenation (2474 TP / 2413 TA images; the Gemma TA 2x2
+scores 2364, where its search prompt yielded parseable points). All runs are vLLM generations with the same prompts and sampler.
 
 The cells = 2 models × 2 conditions {tp, ta} × 2 prompts {search, free}.
 
