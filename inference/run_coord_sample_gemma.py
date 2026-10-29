@@ -27,8 +27,7 @@ def main():
                     help="suppress EOS until this many tokens (forces Gemma past its canned "
                          "'no detections' bail-out into the REGION|POINT list); 0 = off")
     ap.add_argument("--mode", choices=["point", "freeview"], default="point",
-                    help="point = shared REGION|POINT prompt (default); box = Gemma-native JSON "
-                         "box_2d detection (y-first), box centres — ablation for flaky yield")
+                    help="point = shared REGION|POINT search prompt (default); freeview = free-view prompt")
     args = ap.parse_args()
     if not args.run or not str(args.run).isdigit():
         ap.error("--run must be the numeric run/job id")
