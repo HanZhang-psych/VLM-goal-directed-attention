@@ -25,7 +25,7 @@ analysis/                                self-contained reproduction of the pape
 Each model is prompted with the *same* frozen search or free-view prompt (`config.py`) and asked for
 ranked `REGION: … | POINT: (x, y)` locations; the sampled coordinate scanpaths are rendered as
 density maps and scored against the human search and free-view fixation maps.
-`inference/run_coord_sample_{qwen_vllm,gemma_vllm,gemma}.py` (engines `inference/*_vllm_readout.py`)
+`inference/run_coord_sample_{qwen_vllm,gemma_vllm}.py` (engines `inference/*_vllm_readout.py`)
 write the raw `points_`/`human_points_` files, which `analysis/` scores and assembles into the
 paper's results.
 

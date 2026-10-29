@@ -2,8 +2,7 @@
 
 Hands coord_sample.run a GemmaVllmReadout (vLLM continuous batching + chunked cross-image submission)
 and emits the standard points_/human_points/answers schema; scoring is done in analysis/.
-RUN IN A vLLM env (glm-vllm-env has vLLM; 26B MoE needs 2 GPUs). The Gemma HF output path is
-run_coord_sample_gemma.py.
+RUN IN A vLLM env (26B MoE needs 2 GPUs).
 
 Usage:
   python run_coord_sample_gemma_vllm.py --run <jobid> --condition ta --images-csv image_sets/_smoke_ta.csv

@@ -8,12 +8,11 @@ modules (`config.py`, `coco_fv.py`, `gaze_metrics.py`) by bare name. The vLLM pa
 
 ```bash
 PYTHONPATH=. python inference/run_coord_sample_qwen_vllm.py  --run 001 --condition ta --images-csv image_sets/ta_val.csv  # Qwen, vLLM
-PYTHONPATH=. python inference/run_coord_sample_gemma_vllm.py --run 001 --condition ta --images-csv image_sets/ta_val.csv  # Gemma, vLLM (scale-up)
-PYTHONPATH=. python inference/run_coord_sample_gemma.py      --run 001 --condition ta --images-csv image_sets/ta_val.csv  # Gemma, HF (val)
+PYTHONPATH=. python inference/run_coord_sample_gemma_vllm.py --run 001 --condition ta --images-csv image_sets/ta_val.csv  # Gemma, vLLM
 ```
 
 | file | role |
 |---|---|
 | `coord_sample.py` | writes the `points_/human_points_/answers` schema; shared by every runner |
-| `qwen_vllm_readout.py`, `gemma_vllm_readout.py` | vLLM decoding readouts; each also holds its model's output parsing (`qwen_vllm_readout` the Qwen parsers; `gemma_vllm_readout` the `GemmaReadout` HF base + `GemmaVllmReadout` subclass) |
-| `run_coord_sample_qwen_vllm.py`, `…_gemma_vllm.py`, `…_gemma.py` | per-model entrypoints |
+| `qwen_vllm_readout.py`, `gemma_vllm_readout.py` | vLLM decoding readouts; each also holds its model's output parsing  |
+| `run_coord_sample_qwen_vllm.py`, `…_gemma_vllm.py` | per-model entrypoints |

@@ -1,16 +1,11 @@
 """gemma_vllm_readout.py — Gemma-4-26B-A4B-it coordinate readout.
 
-Holds two readouts for coord_sample.run:
-  - GemmaReadout      : the HF (transformers .generate) readout — sample N REGION|POINT
-                        answers to the shared frozen prompt and parse the ranked coordinates.
-                        Used by run_coord_sample_gemma.py.
-  - GemmaVllmReadout  : subclass that swaps in vLLM for THROUGHPUT at scale-up (continuous +
-                        chunked cross-image batching), reusing GemmaReadout's prompt_for/parse.
-                        Used by run_coord_sample_gemma_vllm.py.
+GemmaVllmReadout (for coord_sample.run): sample N REGION|POINT answers to the shared frozen
+prompt via vLLM and parse the ranked coordinates. Used by run_coord_sample_gemma_vllm.py.
 
 Gemma is REPORTED in Instruct (non-thinking) mode.
 
-RUN THE vLLM PATH IN A vLLM ENV WITH Gemma-4 SUPPORT — its per-layer head_dim needs vLLM>=0.27.2.
+RUN IN A vLLM ENV WITH Gemma-4 SUPPORT — its per-layer head_dim needs vLLM>=0.27.2.
 26B-total MoE -> 2 GPUs (TP=2). Tunables (env, NOT
 the VLLM_ namespace): GEMMA_TP, GEMMA_MAX_LEN, GEMMA_GPU_UTIL, GEMMA_MAX_SEQS, GEMMA_MAX_NEW,
 GEMMA_VLLM_ID, GEMMA_ALLOW_GLOBAL_HEADDIM.
@@ -32,11 +27,10 @@ import os
 import re
 
 import numpy as np
-import torch
 
 from config import FREEVIEW_PROMPT, FROZEN_PROMPT, FROZEN_SYSTEM, MODEL_IDS
 
-# One env var controls the Gemma model id for both output paths (default = the reported weights).
+# Model id (default = the reported weights).
 MODEL_ID = os.environ.get("GEMMA_VLLM_ID", MODEL_IDS["gemma"])
 
 _PT = re.compile(r'POINT\s*[:=]?\s*\(?\s*(\d{1,4})\s*[,;]\s*(\d{1,4})', re.I)
@@ -56,93 +50,17 @@ def _yx_box_centre(y1, x1, y2, x2, iw, ih):
             float(np.clip(cy / 1000.0 * ih, 0, ih - 1)))
 
 
-class GemmaReadout:
-    name = MODEL_ID
+class GemmaVllmReadout:
+    """Gemma-4-26B-A4B-it coordinate readout via vLLM (continuous + chunked cross-image batching).
+    Interface for coord_sample.run: load / prompt_for / sample_answers[/ _batch] / parse."""
 
-    def __init__(self, mode="point", max_new_tokens=420, temperature=0.7, top_p=0.8, top_k=20,
-                 batch=4, min_new_tokens=64):
+    def __init__(self, mode="point", max_new_tokens=None, temperature=0.7, top_p=0.8, top_k=20,
+                 min_new_tokens=64):
         self.mode = mode            # "point" = shared REGION|POINT prompt; "freeview" = FREEVIEW_PROMPT
-        self.name = f"{MODEL_ID} ({mode})"
-        self.model = None
-        self.processor = None
-        self.max_new_tokens = max_new_tokens
         # Gemma-4 tends to emit a canned "I did not find any bounding box detections for {t}."
-        # and hit EOS before the ranked REGION|POINT list. min_new_tokens suppresses EOS until
-        # this many tokens are generated, forcing it past that bail-out into the enumeration
-        # (~15 tokens = the canned line; 64 pushes it into a few REGION lines).
+        # and hit EOS before the ranked REGION|POINT list. min_tokens suppresses EOS until this many
+        # tokens are generated, forcing it past that bail-out into the enumeration.
         self.min_new_tokens = min_new_tokens
-        self.temperature = temperature
-        self.top_p = top_p
-        self.top_k = top_k
-        self.batch = batch          # num_return_sequences per forward pass (lower if OOM)
-
-    def load(self):
-        if self.model is not None:
-            return
-        from transformers import AutoProcessor, AutoModelForImageTextToText
-        self.processor = AutoProcessor.from_pretrained(MODEL_ID)
-        self.model = AutoModelForImageTextToText.from_pretrained(
-            MODEL_ID, device_map="auto", torch_dtype=torch.bfloat16)
-
-    def prompt_for(self, task):
-        if self.mode == "freeview":
-            return FREEVIEW_PROMPT          # target-free memory baseline; `task` unused
-        return FROZEN_PROMPT.format(t=task)
-
-    def sample_answers(self, image, prompt, n):
-        img = image.convert("RGB")
-        # Gemma has no dedicated system turn; fold FROZEN_SYSTEM into the user text (identical
-        # wording, delivered in the user turn).
-        text = (FROZEN_SYSTEM + "\n\n" + prompt) if FROZEN_SYSTEM else prompt
-        messages = [{"role": "user", "content": [{"type": "image", "image": img},
-                                                 {"type": "text", "text": text}]}]
-        inputs = self.processor.apply_chat_template(
-            messages, add_generation_prompt=True, tokenize=True,
-            return_dict=True, return_tensors="pt").to(self.model.device)
-        plen = inputs["input_ids"].shape[1]
-        outs = []
-        remaining = n
-        while remaining > 0:
-            k = min(self.batch, remaining)
-            with torch.no_grad():
-                gen = self.model.generate(
-                    **inputs, do_sample=True, temperature=self.temperature,
-                    top_p=self.top_p, top_k=self.top_k, max_new_tokens=self.max_new_tokens,
-                    min_new_tokens=self.min_new_tokens, num_return_sequences=k)
-            for i in range(gen.shape[0]):
-                outs.append(self.processor.decode(gen[i, plen:], skip_special_tokens=True))
-            remaining -= k
-        return outs
-
-    def parse(self, text, iw, ih):
-        return self._points(text, iw, ih)
-
-    def _points(self, text, iw, ih):
-        regs = [m.strip()[:40] for m in _REG.findall(text)]
-        pts = []
-        hits = _PT.findall(text)
-        if hits:
-            for i, (a, b) in enumerate(hits):
-                x, y = int(a), int(b)
-                if not (0 <= x <= 1000 and 0 <= y <= 1000):
-                    continue
-                xpx = float(np.clip(x / 1000.0 * iw, 0, iw - 1))
-                ypx = float(np.clip(y / 1000.0 * ih, 0, ih - 1))
-                pts.append((x, y, xpx, ypx, regs[i] if i < len(regs) else ""))
-        else:                                   # fall back to box centres (Gemma boxes are y-first)
-            for a, b, c, d in _BOX.findall(text):
-                c0 = _yx_box_centre(int(a), int(b), int(c), int(d), iw, ih)
-                if c0:
-                    pts.append((*c0, ""))
-        return pts
-
-class GemmaVllmReadout(GemmaReadout):
-    """vLLM output readout for Gemma-4 (INSTRUCT). Reuses GemmaReadout.prompt_for / _points;
-    overrides load (vLLM), sample_answers[/ _batch], and parse. Gemma is reported in Instruct mode
-    (see config); parses REGION|POINT directly."""
-
-    def __init__(self, mode="point", max_new_tokens=None, temperature=0.7, top_p=0.8, top_k=20):
-        super().__init__(mode=mode)
         self.name = f"{MODEL_ID} ({mode}, vLLM)"
         # Instruct answers are short (ranked REGION|POINT list).
         self.max_new_tokens = int(os.environ.get("GEMMA_MAX_NEW", max_new_tokens or 420))
@@ -192,6 +110,11 @@ class GemmaVllmReadout(GemmaReadout):
         print(f"[gemma-vllm] LLM ready: tp={tp} max_len={os.environ.get('GEMMA_MAX_LEN','8192')} "
               f"max_new={self.max_new_tokens}", flush=True)
 
+    def prompt_for(self, task):
+        if self.mode == "freeview":
+            return FREEVIEW_PROMPT          # target-free memory baseline; `task` unused
+        return FROZEN_PROMPT.format(t=task)
+
     def _req(self, image, prompt):
         """(image, prompt) -> vLLM request dict. Gemma has no system turn: FROZEN_SYSTEM is folded
         into the user text (identical wording)."""
@@ -204,12 +127,12 @@ class GemmaVllmReadout(GemmaReadout):
 
     def _sp(self, n):
         from vllm import SamplingParams
-        # min_tokens mirrors the HF readout's min_new_tokens: Gemma-4 otherwise emits a canned
+        # Gemma-4 otherwise emits a canned
         # "I did not find any bounding box detections for {t}." and hits EOS BEFORE the ranked
         # REGION|POINT list; suppressing EOS for the first min_new_tokens forces it past the bail-out.
         return SamplingParams(n=n, temperature=self.temperature, top_p=self.top_p,
                               top_k=self.top_k, max_tokens=self.max_new_tokens,
-                              min_tokens=int(getattr(self, "min_new_tokens", 64) or 0))
+                              min_tokens=int(self.min_new_tokens))
 
     def sample_answers(self, image, prompt, n):
         out = self.llm.generate(self._req(image, prompt), sampling_params=self._sp(n))
@@ -222,5 +145,23 @@ class GemmaVllmReadout(GemmaReadout):
         return [[o.text for o in ro.outputs] for ro in outs]
 
     def parse(self, text, iw, ih):
-        """Instruct: parse REGION|POINT directly with the inherited Gemma point parser."""
-        return super().parse(text, iw, ih)
+        return self._points(text, iw, ih)
+
+    def _points(self, text, iw, ih):
+        regs = [m.strip()[:40] for m in _REG.findall(text)]
+        pts = []
+        hits = _PT.findall(text)
+        if hits:
+            for i, (a, b) in enumerate(hits):
+                x, y = int(a), int(b)
+                if not (0 <= x <= 1000 and 0 <= y <= 1000):
+                    continue
+                xpx = float(np.clip(x / 1000.0 * iw, 0, iw - 1))
+                ypx = float(np.clip(y / 1000.0 * ih, 0, ih - 1))
+                pts.append((x, y, xpx, ypx, regs[i] if i < len(regs) else ""))
+        else:                                   # fall back to box centres (Gemma boxes are y-first)
+            for a, b, c, d in _BOX.findall(text):
+                c0 = _yx_box_centre(int(a), int(b), int(c), int(d), iw, ih)
+                if c0:
+                    pts.append((*c0, ""))
+        return pts
