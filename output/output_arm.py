@@ -1,4 +1,4 @@
-"""output_arm.py — model-agnostic harness for the OUTPUT (coordinate) arm.
+"""output_arm.py — model-agnostic harness for the coordinate readout.
 
 Purpose: run the coordinate/output readout for ANY model while emitting one shared schema,
 so the scoring (in analysis/) is identical across models:
@@ -36,7 +36,7 @@ import coco_fv as cf
 
 # Reasoning ("thinking") models wrap a chain-of-thought in <think>...</think> before the answer;
 # capture it as its own field so the trace is never lost (empty for other models). Some models
-# (Qwen3-VL-Thinking) have the chat template supply the OPENING <think> in the prompt, so only the
+# (e.g. Qwen3-VL-Thinking) have the chat template supply the OPENING <think> in the prompt, so only the
 # CLOSING </think> appears in the generated text — make the opener optional and grab everything up
 # to the first </think> either way.
 _THINK = re.compile(r"(?:<think>)?\s*(.*?)</think>", re.S)

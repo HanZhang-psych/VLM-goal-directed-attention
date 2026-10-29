@@ -1,4 +1,4 @@
-"""run_coord_sample_gemma.py — OUTPUT arm for Gemma-4-26B-A4B-it.
+"""run_coord_sample_gemma.py — coordinate readout for Gemma-4-26B-A4B-it (HF).
 
 Thin driver: builds a GemmaReadout and hands it to the model-agnostic `output_arm.run`, which
 emits the standard points_/human_points/answers schema; scoring is done in analysis/.

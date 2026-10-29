@@ -4,12 +4,10 @@ the Slurm job id, the frozen prompts, and the output length cap.
 """
 import os
 
-# The models. The revision's Qwen model is the Instruct variant (the original runs used the
-# Thinking variant, kept for provenance); Gemma runs in instruct (non-thinking) mode.
+# The two models, both in instruct (non-thinking) mode.
 MODEL_IDS = {
-    "qwen-instruct": "Qwen/Qwen3-VL-32B-Instruct",   # Qwen, Instruct (revision)
-    "qwen-thinking": "Qwen/Qwen3-VL-32B-Thinking",   # Qwen, Thinking mode (original runs)
-    "gemma": "google/gemma-4-26B-A4B-it",            # Gemma, instruct (non-thinking) mode
+    "qwen-instruct": "Qwen/Qwen3-VL-32B-Instruct",
+    "gemma": "google/gemma-4-26B-A4B-it",
 }
 _ID_TO_KEY = {v: k for k, v in MODEL_IDS.items()}
 
@@ -20,7 +18,7 @@ def model_key(name):
 
 
 # Default model used when --model is not passed.
-DEFAULT_MODEL = MODEL_IDS["qwen-thinking"]
+DEFAULT_MODEL = MODEL_IDS["qwen-instruct"]
 
 DEFAULT_OUTPUT_ROOT = (os.environ.get("VLM_GAZE_OUTPUT_ROOT")
                        or os.path.expanduser("~/vlm-gaze/output"))

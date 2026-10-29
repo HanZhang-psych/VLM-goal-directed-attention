@@ -1,4 +1,4 @@
-"""run_coord_sample_qwen_vllm.py — OUTPUT arm for Qwen3-VL-32B-Thinking via vLLM.
+"""run_coord_sample_qwen_vllm.py — coordinate readout for Qwen3-VL-32B-Instruct via vLLM.
 
 Hands output_arm.run a QwenVllmReadout (vLLM continuous batching + chunked cross-image submission)
 and emits the standard points_/human_points/answers schema; scoring is done in analysis/.

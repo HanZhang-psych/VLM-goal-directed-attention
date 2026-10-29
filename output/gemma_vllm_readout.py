@@ -1,4 +1,4 @@
-"""gemma_vllm_readout.py — Gemma-4-26B-A4B-it OUTPUT arm.
+"""gemma_vllm_readout.py — Gemma-4-26B-A4B-it coordinate readout.
 
 Holds two readouts for output_arm.run:
   - GemmaReadout      : the HF (transformers .generate) output readout — sample N REGION|POINT

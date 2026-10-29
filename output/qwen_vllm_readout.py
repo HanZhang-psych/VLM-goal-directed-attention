@@ -1,11 +1,8 @@
-"""qwen_vllm_readout.py — Qwen3-VL-32B OUTPUT arm via vLLM (Instruct or Thinking weights).
+"""qwen_vllm_readout.py — Qwen3-VL-32B-Instruct coordinate readout via vLLM.
 
-The revision's Qwen cells use the INSTRUCT weights: set QWEN_VLLM_ID=Qwen/Qwen3-VL-32B-Instruct
-(the default here is the Thinking id used by the original runs). Both variants share the prompt,
-the sampler and the parser. The Thinking variant emits a <think>...</think> trace before the
-REGION|POINT answer; the answer is taken AFTER </think> (a no-op for Instruct). Coordinates are
-0-1000 normalized per axis, REGION|POINT, top-MAX_POINTS ranked. RUN IN A vLLM env (32B needs
-2 GPUs -> TP=2).
+Coordinates are 0-1000 normalized per axis, REGION|POINT, top-MAX_POINTS ranked. If the model
+emits a <think>...</think> block, the answer is taken AFTER </think>. QWEN_VLLM_ID overrides the
+model id. RUN IN A vLLM env (32B needs 2 GPUs -> TP=2).
 
 Interface for output_arm.run: load / prompt_for / sample_answers[/ _batch] / parse — with chunked
 batching. Tunables (env, NOT in the VLLM_ namespace): QWEN_TP, QWEN_MAX_LEN, QWEN_GPU_UTIL,
@@ -18,8 +15,7 @@ import numpy as np
 
 from config import FROZEN_SYSTEM, FROZEN_PROMPT, FREEVIEW_PROMPT, MODEL_IDS
 
-# Default = Thinking (the original runs). The revision's cells set QWEN_VLLM_ID to the Instruct id.
-MODEL_ID = os.environ.get("QWEN_VLLM_ID", MODEL_IDS["qwen-thinking"])
+MODEL_ID = os.environ.get("QWEN_VLLM_ID", MODEL_IDS["qwen-instruct"])
 
 MAX_POINTS = 12            # cap points parsed per sampled scanpath
 
@@ -39,7 +35,7 @@ class QwenVllmReadout:
     def __init__(self, mode="point", max_new_tokens=6144, temperature=0.7, top_p=0.8, top_k=20):
         self.mode = mode
         self.name = f"{MODEL_ID} ({mode}, vLLM)"
-        self.max_new_tokens = int(os.environ.get("QWEN_MAX_NEW", max_new_tokens))  # Thinking traces
+        self.max_new_tokens = int(os.environ.get("QWEN_MAX_NEW", max_new_tokens))
         self.temperature = temperature
         self.top_p = top_p
         self.top_k = top_k

@@ -1,4 +1,4 @@
-"""run_coord_sample_gemma_vllm.py — OUTPUT arm for Gemma-4-26B-A4B-it (INSTRUCT) via vLLM.
+"""run_coord_sample_gemma_vllm.py — coordinate readout for Gemma-4-26B-A4B-it via vLLM.
 
 Hands output_arm.run a GemmaVllmReadout (vLLM continuous batching + chunked cross-image submission)
 and emits the standard points_/human_points/answers schema; scoring is done in analysis/.

@@ -9,9 +9,9 @@ from . import gaze_metrics as gm
 from . import runs as R
 
 
-def get_run_ids(model, condition, readout, goal):
-    """Return val + scaleup run IDs for one registry cell."""
-    run_groups = R.RUNS.get((model, condition, readout, goal), {"val": [], "scaleup": []})
+def get_run_ids(model, condition, goal):
+    """Return val + scaleup run IDs for one registry cell (goal = the prompt: search / free)."""
+    run_groups = R.RUNS.get((model, condition, goal), {"val": [], "scaleup": []})
     return list(run_groups["val"]) + list(run_groups["scaleup"])
 
 
@@ -51,7 +51,7 @@ def load_fixations(run_ids, mode):
 
 
 def density_map(points, iw, ih, scale=4):
-    """Compute an output-arm density map with optional downscaling."""
+    """Compute a density map from model points with optional downscaling."""
     scaled_points = np.asarray(points, np.float32).reshape(-1, 2) / scale
     scaled_width = max(1, iw // scale)
     scaled_height = max(1, ih // scale)

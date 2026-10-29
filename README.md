@@ -13,12 +13,12 @@ in the models' emitted coordinates.
 
 ```
 config.py, coco_fv.py, gaze_metrics.py   shared: frozen prompts, output length cap, COCO loader, gaze metrics
-output/                                  OUTPUT arm — sample coordinate scanpaths via vLLM
+output/                                  sample coordinate scanpaths via vLLM
 image_sets/                              the image lists fed to each run (task,name CSVs)
 analysis/                                self-contained reproduction of the paper numbers (notebook 01)
 ```
 
-`output/README.md` has the exact commands to run the output arm.
+`output/README.md` has the exact commands to generate the model outputs.
 
 ## The readout
 
@@ -27,8 +27,7 @@ ranked `REGION: … | POINT: (x, y)` locations; the sampled coordinate scanpaths
 density maps and scored against the human search and free-view fixation maps.
 `output/run_coord_sample_{qwen_vllm,gemma_vllm,gemma}.py` (engines `output/*_vllm_readout.py`)
 write the raw `points_`/`human_points_` files, which `analysis/` scores and assembles into the
-paper's results. The Qwen cells use the Instruct weights (`QWEN_VLLM_ID`); the original
-Qwen3-VL-32B-Thinking runs remain registered in `analysis/helpers/runs.py` for provenance.
+paper's results.
 
 ## Data
 
@@ -80,7 +79,7 @@ Then run the entrypoints directly, with the repo root on `PYTHONPATH` so the scr
 shared root modules. Subset any `image_sets/*.csv` for a quick check.
 
 ```bash
-QWEN_VLLM_ID=Qwen/Qwen3-VL-32B-Instruct PYTHONPATH=. python output/run_coord_sample_qwen_vllm.py --run 002 --condition ta --images-csv image_sets/ta_val.csv
+PYTHONPATH=. python output/run_coord_sample_qwen_vllm.py --run 002 --condition ta --images-csv image_sets/ta_val.csv
 PYTHONPATH=. python output/run_coord_sample_gemma_vllm.py --run 003 --condition ta --images-csv image_sets/ta_val.csv
 ```
 
