@@ -13,19 +13,19 @@ in the models' emitted coordinates.
 
 ```
 config.py, coco_fv.py, gaze_metrics.py   shared: frozen prompts, output length cap, COCO loader, gaze metrics
-output/                                  sample coordinate scanpaths via vLLM
+inference/                                  sample coordinate scanpaths via vLLM
 image_sets/                              the image lists fed to each run (task,name CSVs)
 analysis/                                self-contained reproduction of the paper numbers (notebook 01)
 ```
 
-`output/README.md` has the exact commands to generate the model outputs.
+`inference/README.md` has the exact commands to generate the model outputs.
 
 ## The readout
 
 Each model is prompted with the *same* frozen search or free-view prompt (`config.py`) and asked for
 ranked `REGION: … | POINT: (x, y)` locations; the sampled coordinate scanpaths are rendered as
 density maps and scored against the human search and free-view fixation maps.
-`output/run_coord_sample_{qwen_vllm,gemma_vllm,gemma}.py` (engines `output/*_vllm_readout.py`)
+`inference/run_coord_sample_{qwen_vllm,gemma_vllm,gemma}.py` (engines `inference/*_vllm_readout.py`)
 write the raw `points_`/`human_points_` files, which `analysis/` scores and assembles into the
 paper's results.
 
@@ -79,8 +79,8 @@ Then run the entrypoints directly, with the repo root on `PYTHONPATH` so the scr
 shared root modules. Subset any `image_sets/*.csv` for a quick check.
 
 ```bash
-PYTHONPATH=. python output/run_coord_sample_qwen_vllm.py --run 002 --condition ta --images-csv image_sets/ta_val.csv
-PYTHONPATH=. python output/run_coord_sample_gemma_vllm.py --run 003 --condition ta --images-csv image_sets/ta_val.csv
+PYTHONPATH=. python inference/run_coord_sample_qwen_vllm.py --run 002 --condition ta --images-csv image_sets/ta_val.csv
+PYTHONPATH=. python inference/run_coord_sample_gemma_vllm.py --run 003 --condition ta --images-csv image_sets/ta_val.csv
 ```
 
-`output/README.md` lists the full set of entrypoints and flags.
+`inference/README.md` lists the full set of entrypoints and flags.

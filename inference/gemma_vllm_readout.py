@@ -1,10 +1,9 @@
 """gemma_vllm_readout.py — Gemma-4-26B-A4B-it coordinate readout.
 
 Holds two readouts for coord_sample.run:
-  - GemmaReadout      : the HF (transformers .generate) output readout — sample N REGION|POINT
-                        answers to the shared frozen prompt and parse the ranked coordinates
-                        (mode="box" is the Gemma-native JSON box_2d ablation). Used by
-                        run_coord_sample_gemma.py.
+  - GemmaReadout      : the HF (transformers .generate) readout — sample N REGION|POINT
+                        answers to the shared frozen prompt and parse the ranked coordinates.
+                        Used by run_coord_sample_gemma.py.
   - GemmaVllmReadout  : subclass that swaps in vLLM for THROUGHPUT at scale-up (continuous +
                         chunked cross-image batching), reusing GemmaReadout's prompt_for/parse.
                         Used by run_coord_sample_gemma_vllm.py.
@@ -29,7 +28,6 @@ head_dim as a per-layer attribute (AmbiguousGlobalPerLayerAttributeError). Resol
      gemma-vllm env with a newer vLLM that reads head_dim per-layer, leaving glm-vllm-env (Qwen/GLM)
      untouched.
 """
-import json
 import os
 import re
 
@@ -41,26 +39,10 @@ from config import FREEVIEW_PROMPT, FROZEN_PROMPT, FROZEN_SYSTEM, MODEL_IDS
 # One env var controls the Gemma model id for both output paths (default = the reported weights).
 MODEL_ID = os.environ.get("GEMMA_VLLM_ID", MODEL_IDS["gemma"])
 
-# Gemma-4's NATIVE grounding format (per ai.google.dev/gemma/docs/capabilities/vision/image):
-# a JSON list of {"box_2d": [y1, x1, y2, x2], "label": ...}, Y-FIRST, normalized to a 1000x1000
-# grid. mode="box" prompts in this native format (parse the JSON, take box centres) — an ablation
-# for when the free-form POINT prompt's yield is flaky. Same task/wording as FROZEN_PROMPT.
-BOX_PROMPT = (
-    "You are searching for a {t} in this image. If a {t} is clearly visible, give its bounding "
-    "box; otherwise, give the bounding boxes of all locations in this image you would examine "
-    "before you can decide whether a {t} is present. Rank the locations from most to least "
-    "likely. Output ONLY a JSON list in exactly this format:\n"
-    '[{{"box_2d": [y1, x1, y2, x2], "label": <a short noun phrase for the place>}}, ...]\n'
-    "where y1, x1, y2, x2 are integers from 0 to 1000 giving the top, left, bottom, and right "
-    "edges (y top-to-bottom, x left-to-right), normalized to a 1000x1000 grid."
-)
-
 _PT = re.compile(r'POINT\s*[:=]?\s*\(?\s*(\d{1,4})\s*[,;]\s*(\d{1,4})', re.I)
-# Gemma boxes are Y-FIRST [y1,x1,y2,x2]; this 4-int matcher is used for both the JSON-fallback
-# and the point-mode fallback, interpreted y-first below.
+# Fallback when no POINT is found: Gemma sometimes answers with its native y-first boxes
+# [y1,x1,y2,x2]; their centres are taken as points.
 _BOX = re.compile(r'\[?\s*(\d{1,4})\s*,\s*(\d{1,4})\s*,\s*(\d{1,4})\s*,\s*(\d{1,4})\s*\]')
-_BOX2D = re.compile(r'"box_2d"\s*:\s*\[\s*(\d{1,4})\s*,\s*(\d{1,4})\s*,\s*(\d{1,4})\s*,\s*(\d{1,4})\s*\]'
-                    r'(?:\s*,\s*"label"\s*:\s*"([^"]*)")?', re.I)
 _REG = re.compile(r'REGION\s*[:=]\s*([^\n|]+)', re.I)
 
 
@@ -79,8 +61,7 @@ class GemmaReadout:
 
     def __init__(self, mode="point", max_new_tokens=420, temperature=0.7, top_p=0.8, top_k=20,
                  batch=4, min_new_tokens=64):
-        self.mode = mode            # "point" = shared REGION|POINT prompt (default);
-                                    # "box" = Gemma-native JSON box_2d detection (ablation)
+        self.mode = mode            # "point" = shared REGION|POINT prompt; "freeview" = FREEVIEW_PROMPT
         self.name = f"{MODEL_ID} ({mode})"
         self.model = None
         self.processor = None
@@ -106,7 +87,7 @@ class GemmaReadout:
     def prompt_for(self, task):
         if self.mode == "freeview":
             return FREEVIEW_PROMPT          # target-free memory baseline; `task` unused
-        return (BOX_PROMPT if self.mode == "box" else FROZEN_PROMPT).format(t=task)
+        return FROZEN_PROMPT.format(t=task)
 
     def sample_answers(self, image, prompt, n):
         img = image.convert("RGB")
@@ -134,11 +115,7 @@ class GemmaReadout:
         return outs
 
     def parse(self, text, iw, ih):
-        if self.mode == "box":
-            pts = self._boxes(text, iw, ih)
-            if pts:
-                return pts
-        return self._points(text, iw, ih)      # point mode, or box-mode fallback
+        return self._points(text, iw, ih)
 
     def _points(self, text, iw, ih):
         regs = [m.strip()[:40] for m in _REG.findall(text)]
@@ -159,31 +136,8 @@ class GemmaReadout:
                     pts.append((*c0, ""))
         return pts
 
-    def _boxes(self, text, iw, ih):
-        """Parse Gemma's native JSON detection: list of {"box_2d":[y1,x1,y2,x2],"label":...}."""
-        pts = []
-        # Preferred: strip ```json fences and json.loads the bracketed list.
-        m = re.search(r'\[\s*\{.*\}\s*\]', text, re.S)
-        if m:
-            try:
-                for it in json.loads(m.group(0)):
-                    b = it.get("box_2d")
-                    if isinstance(b, list) and len(b) == 4:
-                        c0 = _yx_box_centre(int(b[0]), int(b[1]), int(b[2]), int(b[3]), iw, ih)
-                        if c0:
-                            pts.append((*c0, str(it.get("label", ""))[:40]))
-            except Exception:                   # noqa: BLE001 - fall through to regex
-                pts = []
-        if not pts:                             # regex fallback over "box_2d":[...] occurrences
-            for a, b, c, d, lab in _BOX2D.findall(text):
-                c0 = _yx_box_centre(int(a), int(b), int(c), int(d), iw, ih)
-                if c0:
-                    pts.append((*c0, (lab or "")[:40]))
-        return pts
-
-
 class GemmaVllmReadout(GemmaReadout):
-    """vLLM output readout for Gemma-4 (INSTRUCT). Reuses GemmaReadout.prompt_for / _points / _boxes;
+    """vLLM output readout for Gemma-4 (INSTRUCT). Reuses GemmaReadout.prompt_for / _points;
     overrides load (vLLM), sample_answers[/ _batch], and parse. Gemma is reported in Instruct mode
     (see config); parses REGION|POINT directly."""
 

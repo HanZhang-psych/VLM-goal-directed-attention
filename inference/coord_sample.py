@@ -28,18 +28,10 @@ per-image path otherwise; the emitted files are byte-identical either way.
 import csv
 import json
 import os
-import re
 
 import numpy as np
 
 import coco_fv as cf
-
-# Reasoning ("thinking") models wrap a chain-of-thought in <think>...</think> before the answer;
-# capture it as its own field so the trace is never lost (empty for other models). Some models
-# (e.g. Qwen3-VL-Thinking) have the chat template supply the OPENING <think> in the prompt, so only the
-# CLOSING </think> appears in the generated text — make the opener optional and grab everything up
-# to the first </think> either way.
-_THINK = re.compile(r"(?:<think>)?\s*(.*?)</think>", re.S)
 
 
 def run(readout, images_csv, coco_dir, condition, run, outdir_root, n=20, chunk=0):
@@ -84,11 +76,8 @@ def run(readout, images_csv, coco_dir, condition, run, outdir_root, n=20, chunk=
         for seq_idx, ans in enumerate(answers):
             pts = readout.parse(ans, iw, ih)
             seqlens.append(len(pts))
-            _th = _THINK.search(ans)
             af.write(json.dumps({"condition": condition, "task": task, "name": name,
-                                 "seq": seq_idx, "n_points": len(pts),
-                                 "thinking": _th.group(1).strip() if _th else "",
-                                 "text": ans}) + "\n")
+                                 "seq": seq_idx, "n_points": len(pts), "text": ans}) + "\n")
             for rank, (x1000, y1000, xpx, ypx, reg) in enumerate(pts):
                 reg = (reg or "").replace(",", " ").replace("\n", " ")
                 pf.write(f"scanpath,scanpath,{task},{name},{iw},{ih},{seq_idx},{rank},"

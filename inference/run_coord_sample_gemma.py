@@ -26,7 +26,7 @@ def main():
     ap.add_argument("--min-new-tokens", type=int, default=64,
                     help="suppress EOS until this many tokens (forces Gemma past its canned "
                          "'no detections' bail-out into the REGION|POINT list); 0 = off")
-    ap.add_argument("--mode", choices=["point", "box", "freeview"], default="point",
+    ap.add_argument("--mode", choices=["point", "freeview"], default="point",
                     help="point = shared REGION|POINT prompt (default); box = Gemma-native JSON "
                          "box_2d detection (y-first), box centres — ablation for flaky yield")
     args = ap.parse_args()
